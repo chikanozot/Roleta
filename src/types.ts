@@ -11,6 +11,7 @@ export interface User {
   role: UserRole;
   active: boolean;
   createdAt: string;
+  isMaster?: boolean;
 }
 
 export interface GoalHistoryItem {

@@ -47,22 +47,7 @@ function initializeDatabase(): DatabaseState {
         password: 'Caio1993',
         role: 'Administrador',
         active: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'user-admin',
-        username: 'admin',
-        password: '123', // Clean, simple passwords for initial testing/dev
-        role: 'Administrador',
-        active: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'user-lider',
-        username: 'lider',
-        password: '123',
-        role: 'Líder',
-        active: true,
+        isMaster: true,
         createdAt: new Date().toISOString()
       }
     ],
@@ -72,7 +57,7 @@ function initializeDatabase(): DatabaseState {
         main: 'Kharsek',
         tsNick: 'Kharsek [TS]',
         joinDate: '2025-01-15',
-        responsibleLeader: 'admin',
+        responsibleLeader: 'zOtGOD',
         status: 'Active',
         notes: 'Membro lendário, focado em bosses e hunts de alto nível.',
         access: { sanguine: true, crypt: true, dragon: true },
@@ -205,9 +190,32 @@ function initializeDatabase(): DatabaseState {
   }
 }
 
-// Configuração do cliente do Supabase com os dados reais informados pelo usuário
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://zeqyvgtzrbmfsopyimzi.supabase.co';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplcXl2Z3R6cmJtZnNvcHlpbXppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMTM4NTksImV4cCI6MjA5ODU4OTg1OX0.qmh0WEaG3XwfQPX0Z7Z52BA2VV5uwr114nTbiTqUqc0';
+// Configuração do cliente do Supabase com os dados reais informados pelo usuário e sanitização robusta contra aspas, valores vazios ou placeholders
+function cleanUrl(url: any): string {
+  if (typeof url !== 'string') return 'https://zeqyvgtzrbmfsopyimzi.supabase.co';
+  let cleaned = url.trim();
+  // Remove aspas simples ou duplas extras do início e fim
+  cleaned = cleaned.replace(/^['"]|['"]$/g, '').trim();
+  // Se estiver vazio, for placeholder padrão ou não for um link válido, usa o fallback do usuário
+  if (!cleaned || cleaned === 'undefined' || cleaned === 'null' || cleaned.includes('your-supabase-project') || !cleaned.match(/^https?:\/\//i)) {
+    return 'https://zeqyvgtzrbmfsopyimzi.supabase.co';
+  }
+  return cleaned;
+}
+
+function cleanKey(key: any): string {
+  if (typeof key !== 'string') return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplcXl2Z3R6cmJtZnNvcHlpbXppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMTM4NTksImV4cCI6MjA5ODU4OTg1OX0.qmh0WEaG3XwfQPX0Z7Z52BA2VV5uwr114nTbiTqUqc0';
+  let cleaned = key.trim();
+  // Remove aspas simples ou duplas extras
+  cleaned = cleaned.replace(/^['"]|['"]$/g, '').trim();
+  if (!cleaned || cleaned === 'undefined' || cleaned === 'null' || cleaned.includes('your-anon-key')) {
+    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplcXl2Z3R6cmJtZnNvcHlpbXppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMTM4NTksImV4cCI6MjA5ODU4OTg1OX0.qmh0WEaG3XwfQPX0Z7Z52BA2VV5uwr114nTbiTqUqc0';
+  }
+  return cleaned;
+}
+
+const supabaseUrl = cleanUrl(process.env.VITE_SUPABASE_URL);
+const supabaseAnonKey = cleanKey(process.env.VITE_SUPABASE_ANON_KEY);
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -257,7 +265,37 @@ async function getDatabaseState(): Promise<DatabaseState> {
     }
 
     if (data && data.state) {
-      return data.state as DatabaseState;
+      const state = data.state as DatabaseState;
+      
+      // Sanitização / Garantia do usuário zOtGOD com Caio1993 e isMaster: true
+      let users = state.users || [];
+      
+      // Remover usuários de teste clássicos se existirem (admin/123, lider/123)
+      users = users.filter(u => {
+        const uname = u.username.toLowerCase();
+        return !(uname === 'admin' && u.password === '123') && !(uname === 'lider' && u.password === '123');
+      });
+
+      const zotgodIndex = users.findIndex(u => u.username.toLowerCase() === 'zotgod');
+      if (zotgodIndex >= 0) {
+        users[zotgodIndex].password = 'Caio1993';
+        users[zotgodIndex].isMaster = true;
+        users[zotgodIndex].role = 'Administrador';
+        users[zotgodIndex].active = true;
+      } else {
+        users.push({
+          id: 'user-zotgod',
+          username: 'zOtGOD',
+          password: 'Caio1993',
+          role: 'Administrador',
+          active: true,
+          isMaster: true,
+          createdAt: new Date().toISOString()
+        });
+      }
+      state.users = users;
+
+      return state;
     }
   } catch (err: any) {
     console.error('[Supabase] Falha catastrófica ao se conectar ao banco:', err.message);
@@ -955,7 +993,7 @@ app.post('/api/access-types', (req, res) => {
 
 // Users - Create User
 app.post('/api/users', (req, res) => {
-  const { username, password, role, active, creatorUsername } = req.body;
+  const { username, password, role, active, creatorUsername, isMaster } = req.body;
 
   if ((creatorUsername || '').toLowerCase().trim() !== 'zotgod') {
     res.status(403).json({ message: 'Acesso negado. Apenas o administrador principal (zOtGOD) pode criar usuários.' });
@@ -980,13 +1018,14 @@ app.post('/api/users', (req, res) => {
     password: password,
     role: role,
     active: active !== undefined ? active : true,
+    isMaster: isMaster === true,
     createdAt: new Date().toISOString()
   };
 
   db.users.push(newUser);
   writeDatabase(db);
 
-  logAction(creatorUsername || 'Sistema', 'CRIAR_USUÁRIO', `Novo usuário de acesso "${newUser.username}" com cargo "${role}" criado por ${creatorUsername}.`);
+  logAction(creatorUsername || 'Sistema', 'CRIAR_USUÁRIO', `Novo usuário de acesso "${newUser.username}" com cargo "${role}" (Master: ${newUser.isMaster ? 'Sim' : 'Não'}) criado por ${creatorUsername}.`);
 
   // Strip password in response
   const { password: _, ...safeResponse } = newUser;
@@ -996,7 +1035,7 @@ app.post('/api/users', (req, res) => {
 // Users - Edit User
 app.put('/api/users/:id', (req, res) => {
   const { id } = req.params;
-  const { username, password, role, active, editorUsername } = req.body;
+  const { username, password, role, active, editorUsername, isMaster } = req.body;
 
   if ((editorUsername || '').toLowerCase().trim() !== 'zotgod') {
     res.status(403).json({ message: 'Acesso negado. Apenas o administrador principal (zOtGOD) pode editar usuários.' });
@@ -1034,6 +1073,11 @@ app.put('/api/users/:id', (req, res) => {
   if (active !== undefined && active !== user.active) {
     changes.push(`Status ativo alterado de "${user.active}" para "${active}"`);
     user.active = active;
+  }
+
+  if (isMaster !== undefined && isMaster !== user.isMaster) {
+    changes.push(`Poderes Master alterado de "${user.isMaster ? 'Sim' : 'Não'}" para "${isMaster ? 'Sim' : 'Não'}"`);
+    user.isMaster = isMaster;
   }
 
   if (changes.length > 0) {

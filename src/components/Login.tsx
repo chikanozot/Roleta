@@ -58,20 +58,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         username: 'zOtGOD',
         role: 'Administrador',
         active: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'user-admin',
-        username: 'admin',
-        role: 'Administrador',
-        active: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'user-lider',
-        username: 'lider',
-        role: 'Líder',
-        active: true,
+        isMaster: true,
         createdAt: new Date().toISOString()
       }
     ];
@@ -82,8 +69,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
     if (matchedUser) {
       // Validate passwords locally
-      const expectedPassword = 
-        matchedUser.username.toLowerCase() === 'zotgod' ? 'Caio1993' : '123';
+      const expectedPassword = 'Caio1993';
       
       if (password === expectedPassword) {
         onLoginSuccess(matchedUser);
@@ -194,26 +180,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             )}
           </button>
         </form>
-
-        {/* Informative credentials section to prevent user blockage */}
-        <div className="mt-8 pt-5 border-t border-[#1E1F22]" id="login-credentials-info">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#f0b232] uppercase tracking-wider mb-2.5">
-            <Sparkles size={14} />
-            <span>Acessos de Teste (Padrão)</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-xs bg-[#1E1F22] p-3 rounded-lg border border-[#1E1F22]">
-            <div>
-              <p className="text-[#b5bac1] font-semibold">Administrador Principal:</p>
-              <code className="text-[#f2f3f5] font-mono select-all block mt-0.5">zOtGOD</code>
-              <code className="text-[#f2f3f5] font-mono select-all block">Caio1993</code>
-            </div>
-            <div>
-              <p className="text-[#b5bac1] font-semibold">Líder:</p>
-              <code className="text-[#f2f3f5] font-mono select-all block mt-0.5">lider</code>
-              <code className="text-[#f2f3f5] font-mono select-all block">123</code>
-            </div>
-          </div>
-        </div>
       </motion.div>
     </div>
   );

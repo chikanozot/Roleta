@@ -97,9 +97,7 @@ export default function App() {
         // Safe Client-Side Default Fallback to prevent infinite loading
         const defaultState: DatabaseState = {
           users: [
-            { id: 'user-zotgod', username: 'zOtGOD', role: 'Administrador', active: true, createdAt: new Date().toISOString() },
-            { id: 'user-admin', username: 'admin', role: 'Administrador', active: true, createdAt: new Date().toISOString() },
-            { id: 'user-lider', username: 'lider', role: 'Líder', active: true, createdAt: new Date().toISOString() }
+            { id: 'user-zotgod', username: 'zOtGOD', role: 'Administrador', active: true, isMaster: true, createdAt: new Date().toISOString() }
           ],
           members: [
             {
@@ -107,7 +105,7 @@ export default function App() {
               main: 'Kharsek',
               tsNick: 'Kharsek [TS]',
               joinDate: '2025-01-15',
-              responsibleLeader: 'admin',
+              responsibleLeader: 'zOtGOD',
               status: 'Active',
               notes: 'Membro lendário, focado em bosses e hunts de alto nível.',
               access: { sanguine: true, crypt: true, dragon: true },

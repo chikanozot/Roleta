@@ -28,11 +28,13 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('Líder');
   const [newActive, setNewActive] = useState(true);
+  const [newIsMaster, setNewIsMaster] = useState(false);
 
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState(''); // Leave blank to keep original
   const [editRole, setEditRole] = useState('Líder');
   const [editActive, setEditActive] = useState(true);
+  const [editIsMaster, setEditIsMaster] = useState(false);
 
   // Fetch complete users list (including password metadata for editing if admin)
   const fetchUsers = async () => {
@@ -73,7 +75,8 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
           password: newPassword,
           role: newRole,
           active: newActive,
-          creatorUsername: currentUser.username
+          creatorUsername: currentUser.username,
+          isMaster: newIsMaster
         })
       });
 
@@ -87,6 +90,7 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
       setNewPassword('');
       setNewRole('Líder');
       setNewActive(true);
+      setNewIsMaster(false);
       
       fetchUsers();
       onRefresh();
@@ -109,6 +113,7 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
     setEditPassword(''); // Leave blank by default
     setEditRole(user.role);
     setEditActive(user.active);
+    setEditIsMaster(user.isMaster || false);
 
     setShowEditModal(true);
     setErrorMsg(null);
@@ -135,7 +140,8 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
           password: editPassword || undefined, // Only send if set
           role: editRole,
           active: editActive,
-          editorUsername: currentUser.username
+          editorUsername: currentUser.username,
+          isMaster: editIsMaster
         })
       });
 
@@ -239,14 +245,21 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
 
                       {/* Role Cargo */}
                       <td className="px-5 py-4 whitespace-nowrap text-[#dbdee1] font-medium">
-                        <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md border ${
-                          user.role === 'Administrador' 
-                            ? 'bg-[#5865f2]/10 text-[#5865f2] border-[#5865f2]/20' 
-                            : 'bg-[#b5bac1]/10 text-[#dbdee1] border-[#1E1F22]'
-                        }`}>
-                          {user.role === 'Administrador' ? <Shield size={12} /> : <ShieldAlert size={12} />}
-                          {user.role}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md border ${
+                            user.role === 'Administrador' 
+                              ? 'bg-[#5865f2]/10 text-[#5865f2] border-[#5865f2]/20' 
+                              : 'bg-[#b5bac1]/10 text-[#dbdee1] border-[#1E1F22]'
+                          }`}>
+                            {user.role === 'Administrador' ? <Shield size={12} /> : <ShieldAlert size={12} />}
+                            {user.role}
+                          </span>
+                          {user.isMaster && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold bg-[#f0b232]/10 text-[#f0b232] border border-[#f0b232]/20 px-1.5 py-0.5 rounded uppercase mt-0.5">
+                              ★ Master
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Creation Date */}
@@ -369,15 +382,30 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
                 </div>
 
                 {/* Active Status checkbox */}
-                <label className="flex items-center gap-3 text-xs text-[#dbdee1] select-none cursor-pointer pt-1 hover:text-white">
-                  <input
-                    type="checkbox"
-                    checked={newActive}
-                    onChange={(e) => setNewActive(e.target.checked)}
-                    className="w-4.5 h-4.5 rounded border-[#1E1F22] text-[#5865f2] focus:ring-[#5865f2] bg-[#1E1F22]"
-                  />
-                  <span>Permitir acesso imediato ao painel (Ativo)</span>
-                </label>
+                <div className="space-y-3 pt-1">
+                  <label className="flex items-center gap-3 text-xs text-[#dbdee1] select-none cursor-pointer hover:text-white">
+                    <input
+                      type="checkbox"
+                      checked={newActive}
+                      onChange={(e) => setNewActive(e.target.checked)}
+                      className="w-4.5 h-4.5 rounded border-[#1E1F22] text-[#5865f2] focus:ring-[#5865f2] bg-[#1E1F22]"
+                    />
+                    <span>Permitir acesso imediato ao painel (Ativo)</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 text-xs text-[#dbdee1] select-none cursor-pointer hover:text-white">
+                    <input
+                      type="checkbox"
+                      checked={newIsMaster}
+                      onChange={(e) => setNewIsMaster(e.target.checked)}
+                      className="w-4.5 h-4.5 rounded border-[#1E1F22] text-[#5865f2] focus:ring-[#5865f2] bg-[#1E1F22]"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-[#f0b232]">Poderes Master</span>
+                      <span className="text-[10px] text-[#949ba4]">Este líder/usuário terá as mesmas permissões que você</span>
+                    </div>
+                  </label>
+                </div>
 
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1E1F22]">
@@ -483,15 +511,30 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
                 </div>
 
                 {/* Active Status checkbox */}
-                <label className="flex items-center gap-3 text-xs text-[#dbdee1] select-none cursor-pointer pt-1 hover:text-white">
-                  <input
-                    type="checkbox"
-                    checked={editActive}
-                    onChange={(e) => setEditActive(e.target.checked)}
-                    className="w-4.5 h-4.5 rounded border-[#1E1F22] text-[#5865f2] focus:ring-[#5865f2] bg-[#1E1F22]"
-                  />
-                  <span>Conta ativa de acesso (Ativo)</span>
-                </label>
+                <div className="space-y-3 pt-1">
+                  <label className="flex items-center gap-3 text-xs text-[#dbdee1] select-none cursor-pointer hover:text-white">
+                    <input
+                      type="checkbox"
+                      checked={editActive}
+                      onChange={(e) => setEditActive(e.target.checked)}
+                      className="w-4.5 h-4.5 rounded border-[#1E1F22] text-[#5865f2] focus:ring-[#5865f2] bg-[#1E1F22]"
+                    />
+                    <span>Conta ativa de acesso (Ativo)</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 text-xs text-[#dbdee1] select-none cursor-pointer hover:text-white">
+                    <input
+                      type="checkbox"
+                      checked={editIsMaster}
+                      onChange={(e) => setEditIsMaster(e.target.checked)}
+                      className="w-4.5 h-4.5 rounded border-[#1E1F22] text-[#5865f2] focus:ring-[#5865f2] bg-[#1E1F22]"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-[#f0b232]">Poderes Master</span>
+                      <span className="text-[10px] text-[#949ba4]">Este líder/usuário terá as mesmas permissões que você</span>
+                    </div>
+                  </label>
+                </div>
 
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1E1F22]">
