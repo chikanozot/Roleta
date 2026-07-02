@@ -6,7 +6,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { createServer as createViteServer } from 'vite';
 import { DatabaseState, User, Member, HistoryLog, Maker, Warning, GoalHistoryItem } from './src/types';
 
-const app = express();
+export const app = express();
 const PORT = 3000;
 
 app.use(express.json());
@@ -15,10 +15,27 @@ app.use(express.json());
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'guild_db.json');
 
+// Safe write helpers to prevent crashes on read-only filesystems (e.g. Vercel)
+function safeWriteFileSync(filePath: string, content: string) {
+  try {
+    fs.writeFileSync(filePath, content, 'utf-8');
+  } catch (err) {
+    console.warn(`[Safe FS] Unable to write to ${filePath} (this is normal on read-only filesystems like Vercel):`, err);
+  }
+}
+
+function safeMkdirSync(dirPath: string) {
+  try {
+    fs.mkdirSync(dirPath, { recursive: true });
+  } catch (err) {
+    console.warn(`[Safe FS] Unable to create directory ${dirPath}:`, err);
+  }
+}
+
 // Helper to ensure data directory and file exist
 function initializeDatabase(): DatabaseState {
   if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    safeMkdirSync(DATA_DIR);
   }
 
   const defaultState: DatabaseState = {
@@ -135,7 +152,7 @@ function initializeDatabase(): DatabaseState {
   };
 
   if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(defaultState, null, 2), 'utf-8');
+    safeWriteFileSync(DB_FILE, JSON.stringify(defaultState, null, 2));
     return defaultState;
   }
 
@@ -159,7 +176,7 @@ function initializeDatabase(): DatabaseState {
         active: true,
         createdAt: new Date().toISOString()
       });
-      fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+      safeWriteFileSync(DB_FILE, JSON.stringify(parsed, null, 2));
     } else {
       // Ensure password is Caio1993, role is Administrador, and active is true
       const existing = parsed.users[zotgodIndex];
@@ -167,7 +184,7 @@ function initializeDatabase(): DatabaseState {
         existing.password = 'Caio1993';
         existing.role = 'Administrador';
         existing.active = true;
-        fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+        safeWriteFileSync(DB_FILE, JSON.stringify(parsed, null, 2));
       }
     }
 
@@ -178,7 +195,7 @@ function initializeDatabase(): DatabaseState {
         dragon: false,
         makerLevel: '450+'
       };
-      fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+      safeWriteFileSync(DB_FILE, JSON.stringify(parsed, null, 2));
     }
     return parsed;
   } catch (err) {
@@ -1130,7 +1147,11 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Bind to host 0.0.0.0 and port 3000
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Guild Manager running on port ${PORT}`);
-});
+// Bind to host 0.0.0.0 and port 3000 if not running on a serverless platform like Vercel
+if (process.env.NODE_ENV !== 'production' || (!process.env.VERCEL && !process.env.VERCEL_ENV)) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Guild Manager running on port ${PORT}`);
+  });
+}
+
+export default app;
