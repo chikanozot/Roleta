@@ -105,20 +105,9 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             Guild Manager
           </h1>
           <p className="text-sm text-[#b5bac1] font-sans">
-            {supabaseConfigured ? 'Autenticação via Supabase' : 'Gerenciamento de Guild Roleta Russa Team'}
+            Autenticação via Supabase Auth
           </p>
         </div>
-
-        {/* Supabase Status Alert */}
-        {!supabaseConfigured && (
-          <div className="mb-5 p-3 bg-[#f0b232]/10 border border-[#f0b232]/20 rounded-lg flex items-start gap-2.5 text-[#f0b232] text-xs leading-relaxed">
-            <AlertTriangle size={18} className="shrink-0 mt-0.5 text-[#f0b232]" />
-            <div>
-              <p className="font-bold mb-0.5">Supabase não configurado</p>
-              <p className="opacity-90">Defina <code className="bg-black/30 px-1 rounded font-mono text-[11px]">VITE_SUPABASE_URL=https://zeqyvgtzrbmfsopyimzi.supabase.co e <code className="bg-black/30 px-1 rounded font-mono text-[11px]">VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplcXl2Z3R6cmJtZnNvcHlpbXppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMTM4NTksImV4cCI6MjA5ODU4OTg1OX0.qmh0WEaG3XwfQPX0Z7Z52BA2VV5uwr114nTbiTqUqc0 na Vercel para ativar o Supabase Auth. Usando credenciais locais de teste.</p>
-            </div>
-          </div>
-        )}
 
         {error && (
           <motion.div

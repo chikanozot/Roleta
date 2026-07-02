@@ -13,12 +13,12 @@ app.use(express.json());
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'guild_db.json');
 
-// Safe write helpers to prevent crashes on read-only filesystems (e.g. Vercel)
+// Safe write helpers to prevent crashes on read-only filesystems
 function safeWriteFileSync(filePath: string, content: string) {
   try {
     fs.writeFileSync(filePath, content, 'utf-8');
   } catch (err) {
-    console.warn(`[Safe FS] Unable to write to ${filePath} (this is normal on read-only filesystems like Vercel):`, err);
+    console.warn(`[Safe FS] Unable to write to ${filePath}:`, err);
   }
 }
 
