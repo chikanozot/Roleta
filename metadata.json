@@ -1,0 +1,6 @@
+{
+  "name": "Guild Manager",
+  "description": "Painel administrativo de gerenciamento de membros para guild de Tibia (Roleta Russa Team/Global).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
