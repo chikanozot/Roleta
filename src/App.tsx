@@ -94,7 +94,101 @@ export default function App() {
         setDbState(JSON.parse(localCacheRaw));
         setSyncStatus({ status: 'local', message: 'Modo Offline (Dados locais)' });
       } else {
-        setSyncStatus({ status: 'local', message: 'Servidor inacessível' });
+        // Safe Client-Side Default Fallback to prevent infinite loading
+        const defaultState: DatabaseState = {
+          users: [
+            { id: 'user-zotgod', username: 'zOtGOD', role: 'Administrador', active: true, createdAt: new Date().toISOString() },
+            { id: 'user-admin', username: 'admin', role: 'Administrador', active: true, createdAt: new Date().toISOString() },
+            { id: 'user-lider', username: 'lider', role: 'Líder', active: true, createdAt: new Date().toISOString() }
+          ],
+          members: [
+            {
+              id: 'member-1',
+              main: 'Kharsek',
+              tsNick: 'Kharsek [TS]',
+              joinDate: '2025-01-15',
+              responsibleLeader: 'admin',
+              status: 'Active',
+              notes: 'Membro lendário, focado em bosses e hunts de alto nível.',
+              access: { sanguine: true, crypt: true, dragon: true },
+              makers: [
+                {
+                  id: 'maker-1-1',
+                  name: 'Kharsek Maker',
+                  levelGoals: [
+                    { id: 'g1', goal: '450+', date: '2025-02-10', time: '14:30', byUser: 'admin' },
+                    { id: 'g2', goal: '500+', date: '2025-04-12', time: '18:15', byUser: 'lider' }
+                  ],
+                  createdAt: '2025-02-10T14:30:00.000Z'
+                }
+              ],
+              warnings: [
+                {
+                  id: 'warn-1-1',
+                  reason: 'Atraso sem justificativa na war de sábado.',
+                  date: '2025-03-01',
+                  time: '21:00',
+                  byLeader: 'lider',
+                  removed: true,
+                  removedBy: 'admin',
+                  removedDate: '2025-03-15',
+                  removedTime: '15:20'
+                }
+              ],
+              createdAt: '2025-01-15T12:00:00.000Z',
+              updatedAt: '2025-04-12T18:15:00.000Z'
+            },
+            {
+              id: 'member-2',
+              main: 'Eternal Oblivion',
+              tsNick: 'EO [Team]',
+              joinDate: '2025-03-10',
+              responsibleLeader: 'lider',
+              status: 'Active',
+              notes: 'Excelente blocker, participa ativamente de todos os serviços.',
+              access: { sanguine: true, crypt: false, dragon: true },
+              makers: [],
+              warnings: [
+                {
+                  id: 'warn-2-1',
+                  reason: 'Ausência em reunião de estratégia.',
+                  date: '2025-06-20',
+                  time: '20:10',
+                  byLeader: 'lider',
+                  removed: false
+                }
+              ],
+              createdAt: '2025-03-10T15:00:00.000Z',
+              updatedAt: '2025-06-20T20:10:00.000Z'
+            }
+          ],
+          history: [
+            {
+              id: 'hist-init',
+              timestamp: new Date().toISOString(),
+              date: new Date().toISOString().split('T')[0],
+              time: new Date().toLocaleTimeString('pt-BR', { hour12: false }).substring(0, 5),
+              username: 'Sistema',
+              action: 'INICIALIZAÇÃO',
+              details: 'Banco de dados inicializado localmente em modo contingência.'
+            }
+          ],
+          accessTypes: [
+            { id: 'sanguine', label: 'Sanguine' },
+            { id: 'crypt', label: 'Crypt' },
+            { id: 'dragon', label: 'Dragãozinho' }
+          ],
+          roles: ['Administrador', 'Líder'],
+          globalGoals: {
+            sanguine: false,
+            crypt: false,
+            dragon: false,
+            makerLevel: '450+'
+          }
+        };
+        localStorage.setItem('guild_manager_db_cache', JSON.stringify(defaultState));
+        setDbState(defaultState);
+        setSyncStatus({ status: 'local', message: 'Offline (Banco inicializado)' });
       }
     }
   };

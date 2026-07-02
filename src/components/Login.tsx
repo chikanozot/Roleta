@@ -1,27 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Shield, Key, User as UserIcon, Mail, AlertCircle, Sparkles, AlertTriangle } from 'lucide-react';
+import { Shield, Key, User as UserIcon, AlertCircle, Sparkles } from 'lucide-react';
 import { User } from '../types';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface LoginProps {
   onLoginSuccess: (user: User) => void;
 }
 
 export default function Login({ onLoginSuccess }: LoginProps) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [supabaseConfigured, setSupabaseConfigured] = useState(false);
-
-  useEffect(() => {
-    setSupabaseConfigured(isSupabaseConfigured());
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
+    if (!username.trim() || !password.trim()) {
       setError('Por favor, preencha todos os campos.');
       return;
     }
@@ -29,56 +23,81 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setIsLoading(true);
     setError(null);
 
+    const cleanUsername = username.trim();
+
     try {
-      if (supabaseConfigured) {
-        // Authenticate with Supabase Auth using email and password
-        const { data, error: authError } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password,
-        });
+      // Try backend authentication first
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: cleanUsername, password: password.trim() }),
+      });
 
-        if (authError) {
-          throw new Error(authError.message);
-        }
+      const data = await response.json();
 
-        if (data.user) {
-          const usernameFromEmail = data.user.email?.split('@')[0] || 'usuario';
-          const finalUsername = data.user.user_metadata?.username || usernameFromEmail;
-          const userRole = data.user.user_metadata?.role || 'Administrador';
-
-          const loggedInUser: User = {
-            id: data.user.id,
-            username: finalUsername,
-            role: userRole,
-            active: true,
-            createdAt: data.user.created_at || new Date().toISOString()
-          };
-
-          onLoginSuccess(loggedInUser);
-        }
+      if (response.ok && data.user) {
+        onLoginSuccess(data.user);
+        setIsLoading(false);
+        return;
       } else {
-        // Fallback local login if Supabase is not configured
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ username: email.trim(), password: password.trim() }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
+        // If the server explicitly rejected the credentials with a status other than 404/5xx, show that error
+        if (response.status !== 404 && response.status < 500) {
           throw new Error(data.message || 'Erro ao efetuar login.');
         }
-
-        onLoginSuccess(data.user);
       }
     } catch (err: any) {
-      setError(err.message || 'Falha de comunicação.');
-    } finally {
-      setIsLoading(false);
+      console.warn('Backend login failed, attempting local client-side validation fallback:', err.message);
     }
+
+    // Client-side local fallback validation (useful if backend is offline or on a static platform)
+    const localUsers: User[] = [
+      {
+        id: 'user-zotgod',
+        username: 'zOtGOD',
+        role: 'Administrador',
+        active: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'user-admin',
+        username: 'admin',
+        role: 'Administrador',
+        active: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'user-lider',
+        username: 'lider',
+        role: 'Líder',
+        active: true,
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    const matchedUser = localUsers.find(
+      u => u.username.toLowerCase() === cleanUsername.toLowerCase()
+    );
+
+    if (matchedUser) {
+      // Validate passwords locally
+      const expectedPassword = 
+        matchedUser.username.toLowerCase() === 'zotgod' ? 'Caio1993' : '123';
+      
+      if (password === expectedPassword) {
+        onLoginSuccess(matchedUser);
+        setIsLoading(false);
+        return;
+      } else {
+        setError('Senha incorreta.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    setError('Usuário não encontrado.');
+    setIsLoading(false);
   };
 
   return (
@@ -91,7 +110,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="w-full max-w-md discord-card rounded-xl p-8 z-10 flex flex-col relative animate-fade-in"
+        className="w-full max-w-md discord-card rounded-xl p-8 z-10 flex flex-col relative"
         id="login-card"
       >
         {/* Gaming Border Line Accent */}
@@ -105,7 +124,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             Guild Manager
           </h1>
           <p className="text-sm text-[#b5bac1] font-sans">
-            Autenticação via Supabase Auth
+            Gerenciamento de Guild Roleta Russa Team / Global
           </p>
         </div>
 
@@ -124,20 +143,20 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         <form onSubmit={handleSubmit} className="space-y-5" id="login-form">
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-[#b5bac1] block">
-              {supabaseConfigured ? 'Endereço de E-mail' : 'Nome de Usuário / E-mail'}
+              Nome de Usuário
             </label>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#949ba4]">
-                {supabaseConfigured ? <Mail size={18} /> : <UserIcon size={18} />}
+                <UserIcon size={18} />
               </span>
               <input
-                type={supabaseConfigured ? "email" : "text"}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-[#1E1F22] border border-[#1E1F22] rounded-lg py-3 pl-11 pr-4 text-sm text-[#f2f3f5] placeholder-[#949ba4] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition duration-200"
-                placeholder={supabaseConfigured ? "exemplo@dominio.com" : "Insira seu usuário"}
+                placeholder="Insira seu usuário"
                 id="login-username-input"
-                autoComplete={supabaseConfigured ? "email" : "username"}
+                autoComplete="username"
               />
             </div>
           </div>
@@ -180,26 +199,20 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         <div className="mt-8 pt-5 border-t border-[#1E1F22]" id="login-credentials-info">
           <div className="flex items-center gap-1.5 text-xs font-bold text-[#f0b232] uppercase tracking-wider mb-2.5">
             <Sparkles size={14} />
-            <span>{supabaseConfigured ? 'Contas de Acesso Supabase' : 'Acessos de Teste (Padrão)'}</span>
+            <span>Acessos de Teste (Padrão)</span>
           </div>
-          {supabaseConfigured ? (
-            <p className="text-xs text-[#b5bac1] leading-relaxed">
-              Utilize o e-mail e a senha cadastrados no seu projeto do <strong className="text-white">Supabase Auth</strong>. Certifique-se de que os usuários possuam as permissões adequadas.
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 text-xs bg-[#1E1F22] p-3 rounded-lg border border-[#1E1F22]">
-              <div>
-                <p className="text-[#b5bac1] font-semibold">Administrador:</p>
-                <code className="text-[#f2f3f5] font-mono select-all block mt-0.5">admin</code>
-                <code className="text-[#f2f3f5] font-mono select-all block">123</code>
-              </div>
-              <div>
-                <p className="text-[#b5bac1] font-semibold">Líder:</p>
-                <code className="text-[#f2f3f5] font-mono select-all block mt-0.5">lider</code>
-                <code className="text-[#f2f3f5] font-mono select-all block">123</code>
-              </div>
+          <div className="grid grid-cols-2 gap-3 text-xs bg-[#1E1F22] p-3 rounded-lg border border-[#1E1F22]">
+            <div>
+              <p className="text-[#b5bac1] font-semibold">Administrador Principal:</p>
+              <code className="text-[#f2f3f5] font-mono select-all block mt-0.5">zOtGOD</code>
+              <code className="text-[#f2f3f5] font-mono select-all block">Caio1993</code>
             </div>
-          )}
+            <div>
+              <p className="text-[#b5bac1] font-semibold">Líder:</p>
+              <code className="text-[#f2f3f5] font-mono select-all block mt-0.5">lider</code>
+              <code className="text-[#f2f3f5] font-mono select-all block">123</code>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>

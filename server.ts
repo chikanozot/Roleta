@@ -2,12 +2,15 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { createClient } from '@supabase/supabase-js';
+import { AsyncLocalStorage } from 'async_hooks';
 import { DatabaseState, User, Member, HistoryLog, Maker, Warning, GoalHistoryItem } from './src/types';
 
 export const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
 
 // Path to store our JSON file database
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -202,13 +205,108 @@ function initializeDatabase(): DatabaseState {
   }
 }
 
-// Write helper
-function writeDatabase(state: DatabaseState) {
-  safeWriteFileSync(DB_FILE, JSON.stringify(state, null, 2));
+// Configuração do cliente do Supabase com os dados reais informados pelo usuário
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://zeqyvgtzrbmfsopyimzi.supabase.co';
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplcXl2Z3R6cmJtZnNvcHlpbXppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMTM4NTksImV4cCI6MjA5ODU4OTg1OX0.qmh0WEaG3XwfQPX0Z7Z52BA2VV5uwr114nTbiTqUqc0';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Definição do AsyncLocalStorage para manter o estado do banco isolado por requisição (Thread-safe)
+const dbStorage = new AsyncLocalStorage<DatabaseState>();
+let dbInMemory = initializeDatabase();
+
+declare global {
+  var db: DatabaseState;
 }
 
-// Load database state
-let db = initializeDatabase();
+Object.defineProperty(globalThis, 'db', {
+  get() {
+    return dbStorage.getStore() || dbInMemory;
+  },
+  set(val) {
+    dbInMemory = val;
+  },
+  configurable: true
+});
+
+// Helper para obter o estado do banco no Supabase com resiliência local
+async function getDatabaseState(): Promise<DatabaseState> {
+  try {
+    const { data, error } = await supabase
+      .from('guild_data')
+      .select('state')
+      .eq('id', 'main')
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Tabela existe mas o registro 'main' não existe. Insere o estado padrão.
+        console.log('[Supabase] Registro "main" não encontrado. Criando estado inicial...');
+        const { error: insertError } = await supabase
+          .from('guild_data')
+          .insert({ id: 'main', state: dbInMemory });
+        
+        if (insertError) {
+          console.error('[Supabase] Falha ao inserir estado inicial:', insertError.message);
+        }
+        return dbInMemory;
+      }
+      
+      console.warn(`[Supabase] Erro ao buscar dados (${error.code || error.message}). Usando cache local temporário.`);
+      return dbInMemory;
+    }
+
+    if (data && data.state) {
+      return data.state as DatabaseState;
+    }
+  } catch (err: any) {
+    console.error('[Supabase] Falha catastrófica ao se conectar ao banco:', err.message);
+  }
+  return dbInMemory;
+}
+
+// Helper para salvar o estado no Supabase de forma assíncrona
+async function saveDatabaseState(state: DatabaseState) {
+  try {
+    const { error } = await supabase
+      .from('guild_data')
+      .upsert({ id: 'main', state });
+
+    if (error) {
+      console.error('[Supabase] Falha ao salvar estado no banco:', error.message);
+    } else {
+      console.log('[Supabase] Sincronização com o Supabase efetuada com sucesso!');
+    }
+  } catch (err: any) {
+    console.error('[Supabase] Erro na requisição de persistência:', err.message);
+  }
+}
+
+// Middleware do Express para interceptar cada requisição e sincronizar os dados do Supabase
+app.use(async (req, res, next) => {
+  try {
+    const latestState = await getDatabaseState();
+    dbStorage.run(latestState, () => {
+      next();
+    });
+  } catch (err: any) {
+    console.error('[Middleware] Falha ao carregar estado do Supabase:', err.message);
+    dbStorage.run(dbInMemory, () => {
+      next();
+    });
+  }
+});
+
+// Write helper
+function writeDatabase(state: DatabaseState) {
+  dbInMemory = state;
+  safeWriteFileSync(DB_FILE, JSON.stringify(state, null, 2));
+  // Dispara a sincronização em nuvem assincronamente sem bloquear a resposta do Express
+  saveDatabaseState(state).catch(err => {
+    console.error('[Supabase] Erro na sincronização assíncrona:', err);
+  });
+}
+
 
 // Add a history helper
 function logAction(username: string, action: string, details: string) {
