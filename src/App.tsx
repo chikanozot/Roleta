@@ -32,7 +32,7 @@ export default function App() {
     message: 'Carregando banco de dados...'
   });
 
-  // Action: Fetch full DB from server with optional cache merge
+  // Action: Fetch full DB from server
   const fetchDbState = async (forceSync = false) => {
     setSyncStatus({ status: 'syncing', message: 'Conectando...' });
     try {
@@ -43,49 +43,11 @@ export default function App() {
       
       const serverState = (await response.json()) as DatabaseState;
       
-      // Check local cache for disaster-recovery / Cloud Run cold boot restarts
-      const localCacheRaw = localStorage.getItem('guild_manager_db_cache');
-      let finalState = serverState;
-
-      if (localCacheRaw) {
-        try {
-          const localState = JSON.parse(localCacheRaw) as DatabaseState;
-          const serverLogs = serverState.history?.length || 0;
-          const localLogs = localState.history?.length || 0;
-
-          // If local client has more history logs than the server (meaning container restarted and memory wiped)
-          if (localLogs > serverLogs || forceSync) {
-            setSyncStatus({ status: 'syncing', message: 'Restaurando cache local...' });
-            
-            // Sync server with local cache
-            const syncResponse = await fetch('/api/db/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(localState),
-            });
-
-            if (syncResponse.ok) {
-              finalState = localState;
-              setSyncStatus({ status: 'synced', message: 'Cache local sincronizado' });
-            } else {
-              setSyncStatus({ status: 'local', message: 'Servidor limpo (Cache local mantido)' });
-            }
-          } else {
-            // Server is more up-to-date or equal, update local cache to match server
-            localStorage.setItem('guild_manager_db_cache', JSON.stringify(serverState));
-            setSyncStatus({ status: 'synced', message: 'Sincronizado com nuvem' });
-          }
-        } catch (cacheErr) {
-          console.error('Error handling local storage sync fallback:', cacheErr);
-          setSyncStatus({ status: 'synced', message: 'Conectado' });
-        }
-      } else {
-        // No local cache yet, save it
-        localStorage.setItem('guild_manager_db_cache', JSON.stringify(serverState));
-        setSyncStatus({ status: 'synced', message: 'Sincronizado com nuvem' });
-      }
-
-      setDbState(finalState);
+      // Update local cache as backup
+      localStorage.setItem('guild_manager_db_cache', JSON.stringify(serverState));
+      setSyncStatus({ status: 'synced', message: 'Sincronizado com nuvem' });
+      
+      setDbState(serverState);
     } catch (err: any) {
       console.error('Fetch DB error:', err);
       // Fail-soft: Use local cache if server is completely offline

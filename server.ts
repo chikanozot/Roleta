@@ -339,8 +339,8 @@ async function saveDatabaseState(state: DatabaseState) {
   }
 }
 
-// Middleware do Express para interceptar cada requisição e sincronizar os dados do Supabase
-app.use(async (req, res, next) => {
+// Middleware do Express para interceptar cada requisição de API e sincronizar os dados do Supabase
+app.use('/api', async (req, res, next) => {
   try {
     const latestState = await getDatabaseState();
     dbStorage.run(latestState, () => {
@@ -468,26 +468,9 @@ app.get('/api/admin/users', (req, res) => {
   res.json({ users: db.users });
 });
 
-// Sync database from localStorage (if client has more up-to-date data during cold boot)
+// Sync database from localStorage is deprecated as we prefer the online Supabase database as the single master source of truth.
 app.post('/api/db/sync', (req, res) => {
-  const clientState = req.body as DatabaseState;
-  if (!clientState || !Array.isArray(clientState.members)) {
-    res.status(400).json({ message: 'Estado inválido enviado para sincronização.' });
-    return;
-  }
-
-  // Merge logic: check if client has more history or members than current state
-  const clientLogCount = clientState.history?.length || 0;
-  const serverLogCount = db.history?.length || 0;
-
-  if (clientLogCount > serverLogCount) {
-    db = clientState;
-    writeDatabase(db);
-    logAction('Sistema', 'SINCRONIZAÇÃO', 'O banco de dados foi sincronizado/restaurado a partir do cache do cliente.');
-    res.json({ status: 'ok', source: 'client', message: 'Servidor atualizado com os dados locais do cliente.' });
-  } else {
-    res.json({ status: 'ok', source: 'server', message: 'Servidor já possui os dados mais recentes.' });
-  }
+  res.json({ status: 'ok', source: 'server', message: 'O banco de dados online do Supabase é o mestre absoluto.' });
 });
 
 // Restore database manually
