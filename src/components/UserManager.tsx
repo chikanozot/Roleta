@@ -80,7 +80,15 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
         })
       });
 
-      const data = await response.json();
+      let data: any = {};
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || 'Erro interno do servidor.');
+      }
+
       if (!response.ok) {
         throw new Error(data.message || 'Erro ao criar usuário.');
       }
@@ -145,7 +153,15 @@ export default function UserManager({ currentUser, onRefresh }: UserManagerProps
         })
       });
 
-      const data = await response.json();
+      let data: any = {};
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || 'Erro interno do servidor.');
+      }
+
       if (!response.ok) {
         throw new Error(data.message || 'Erro ao atualizar usuário.');
       }

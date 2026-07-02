@@ -146,10 +146,12 @@ function initializeDatabase(): DatabaseState {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
 
-    // Ensure users array exists
-    if (!parsed.users) {
-      parsed.users = [];
-    }
+    // Fully sanitize and initialize all properties to prevent undefined type errors
+    if (!parsed.users) parsed.users = [];
+    if (!parsed.members) parsed.members = [];
+    if (!parsed.history) parsed.history = [];
+    if (!parsed.accessTypes) parsed.accessTypes = [];
+    if (!parsed.roles) parsed.roles = ['Administrador', 'Líder'];
 
     // Check if zOtGOD exists (case-insensitive)
     const zotgodIndex = parsed.users.findIndex((u: any) => u.username.toLowerCase() === 'zotgod');
@@ -160,16 +162,18 @@ function initializeDatabase(): DatabaseState {
         password: 'Caio1993',
         role: 'Administrador',
         active: true,
+        isMaster: true,
         createdAt: new Date().toISOString()
       });
       safeWriteFileSync(DB_FILE, JSON.stringify(parsed, null, 2));
     } else {
-      // Ensure password is Caio1993, role is Administrador, and active is true
+      // Ensure password is Caio1993, role is Administrador, isMaster and active is true
       const existing = parsed.users[zotgodIndex];
-      if (existing.password !== 'Caio1993' || existing.role !== 'Administrador' || !existing.active) {
+      if (existing.password !== 'Caio1993' || existing.role !== 'Administrador' || !existing.active || !existing.isMaster) {
         existing.password = 'Caio1993';
         existing.role = 'Administrador';
         existing.active = true;
+        existing.isMaster = true;
         safeWriteFileSync(DB_FILE, JSON.stringify(parsed, null, 2));
       }
     }
@@ -267,6 +271,21 @@ async function getDatabaseState(): Promise<DatabaseState> {
     if (data && data.state) {
       const state = data.state as DatabaseState;
       
+      // Fully sanitize and initialize all properties to prevent undefined type errors
+      if (!state.users) state.users = [];
+      if (!state.members) state.members = [];
+      if (!state.history) state.history = [];
+      if (!state.accessTypes) state.accessTypes = [];
+      if (!state.roles) state.roles = ['Administrador', 'Líder'];
+      if (!state.globalGoals) {
+        state.globalGoals = {
+          sanguine: false,
+          crypt: false,
+          dragon: false,
+          makerLevel: '450+'
+        };
+      }
+
       // Sanitização / Garantia do usuário zOtGOD com Caio1993 e isMaster: true
       let users = state.users || [];
       
@@ -438,9 +457,12 @@ app.post('/api/global-goals', (req, res) => {
 
 // Admin-only direct state fetch (with passwords) for user editing
 app.get('/api/admin/users', (req, res) => {
-  const requester = (req.query.requester as string || '').toLowerCase().trim();
-  if (requester !== 'zotgod') {
-    res.status(403).json({ message: 'Acesso negado. Apenas o administrador principal (zOtGOD) pode listar usuários.' });
+  const requesterName = (req.query.requester as string || '').toLowerCase().trim();
+  const requester = db.users.find(u => u.username.toLowerCase() === requesterName);
+  const isAuthorized = requester && requester.active && (requester.role === 'Administrador' || requester.isMaster || requester.username.toLowerCase() === 'zotgod');
+
+  if (!isAuthorized) {
+    res.status(403).json({ message: 'Acesso negado. Apenas administradores ativos podem listar usuários.' });
     return;
   }
   res.json({ users: db.users });
@@ -995,8 +1017,11 @@ app.post('/api/access-types', (req, res) => {
 app.post('/api/users', (req, res) => {
   const { username, password, role, active, creatorUsername, isMaster } = req.body;
 
-  if ((creatorUsername || '').toLowerCase().trim() !== 'zotgod') {
-    res.status(403).json({ message: 'Acesso negado. Apenas o administrador principal (zOtGOD) pode criar usuários.' });
+  const creator = db.users.find(u => u.username.toLowerCase() === (creatorUsername || '').toLowerCase().trim());
+  const isAuthorized = creator && creator.active && (creator.role === 'Administrador' || creator.isMaster || creator.username.toLowerCase() === 'zotgod');
+
+  if (!isAuthorized) {
+    res.status(403).json({ message: 'Acesso negado. Apenas administradores ativos podem criar usuários.' });
     return;
   }
 
@@ -1037,8 +1062,11 @@ app.put('/api/users/:id', (req, res) => {
   const { id } = req.params;
   const { username, password, role, active, editorUsername, isMaster } = req.body;
 
-  if ((editorUsername || '').toLowerCase().trim() !== 'zotgod') {
-    res.status(403).json({ message: 'Acesso negado. Apenas o administrador principal (zOtGOD) pode editar usuários.' });
+  const editor = db.users.find(u => u.username.toLowerCase() === (editorUsername || '').toLowerCase().trim());
+  const isAuthorized = editor && editor.active && (editor.role === 'Administrador' || editor.isMaster || editor.username.toLowerCase() === 'zotgod');
+
+  if (!isAuthorized) {
+    res.status(403).json({ message: 'Acesso negado. Apenas administradores ativos podem editar usuários.' });
     return;
   }
 
@@ -1087,6 +1115,14 @@ app.put('/api/users/:id', (req, res) => {
 
   const { password: _, ...safeResponse } = user;
   res.json(safeResponse);
+});
+
+// Custom JSON error handler middleware to avoid sending HTML stack traces to clients expecting JSON
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[Error Handler]', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Ocorreu um erro interno no servidor.'
+  });
 });
 
 

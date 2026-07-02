@@ -1,0 +1,291 @@
+{
+  "roles": [
+    "Administrador",
+    "Líder"
+  ],
+  "users": [
+    {
+      "id": "user-zotgod",
+      "role": "Administrador",
+      "active": true,
+      "isMaster": true,
+      "password": "Caio1993",
+      "username": "zOtGOD",
+      "createdAt": "2026-07-02T20:28:33.738Z"
+    },
+    {
+      "id": "user-1783029922391",
+      "role": "Líder",
+      "active": true,
+      "isMaster": false,
+      "password": "123",
+      "username": "caio",
+      "createdAt": "2026-07-02T22:05:22.391Z"
+    },
+    {
+      "id": "user-1783031976353",
+      "username": "teste",
+      "password": "123",
+      "role": "Líder",
+      "active": true,
+      "isMaster": false,
+      "createdAt": "2026-07-02T22:39:36.353Z"
+    }
+  ],
+  "history": [
+    {
+      "id": "hist-1783031976354-a2f3",
+      "timestamp": "2026-07-02T22:39:36.353Z",
+      "date": "2026-07-02",
+      "time": "22:39",
+      "username": "zOtGOD",
+      "action": "CRIAR_USUÁRIO",
+      "details": "Novo usuário de acesso \"teste\" com cargo \"Líder\" (Master: Não) criado por zOtGOD."
+    },
+    {
+      "id": "hist-1783031410919-eorr",
+      "date": "2026-07-02",
+      "time": "22:30",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T22:30:10.919Z"
+    },
+    {
+      "id": "hist-1783031410634-uxjk",
+      "date": "2026-07-02",
+      "time": "22:30",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T22:30:10.634Z"
+    },
+    {
+      "id": "hist-1783030868513-fknk",
+      "date": "2026-07-02",
+      "time": "22:21",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T22:21:08.512Z"
+    },
+    {
+      "id": "hist-1783030868244-spo7",
+      "date": "2026-07-02",
+      "time": "22:21",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T22:21:08.244Z"
+    },
+    {
+      "id": "hist-1783029935816-8ex5",
+      "date": "2026-07-02",
+      "time": "22:05",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T22:05:35.816Z"
+    },
+    {
+      "id": "hist-1783029935191-ovvd",
+      "date": "2026-07-02",
+      "time": "22:05",
+      "action": "LOGIN",
+      "details": "Usuário caio efetuou login no painel.",
+      "username": "caio",
+      "timestamp": "2026-07-02T22:05:35.190Z"
+    },
+    {
+      "id": "hist-1783029930659-enin",
+      "date": "2026-07-02",
+      "time": "22:05",
+      "action": "LOGOUT",
+      "details": "Usuário zOtGOD deslogou do painel.",
+      "username": "zOtGOD",
+      "timestamp": "2026-07-02T22:05:30.659Z"
+    },
+    {
+      "id": "hist-1783029923146-94zj",
+      "date": "2026-07-02",
+      "time": "22:05",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T22:05:23.146Z"
+    },
+    {
+      "id": "hist-1783029922392-wag2",
+      "date": "2026-07-02",
+      "time": "22:05",
+      "action": "CRIAR_USUÁRIO",
+      "details": "Novo usuário de acesso \"caio\" com cargo \"Líder\" (Master: Não) criado por zOtGOD.",
+      "username": "zOtGOD",
+      "timestamp": "2026-07-02T22:05:22.392Z"
+    },
+    {
+      "id": "hist-1783029889927-nx1b",
+      "date": "2026-07-02",
+      "time": "22:04",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T22:04:49.927Z"
+    },
+    {
+      "id": "hist-1783029889288-klbs",
+      "date": "2026-07-02",
+      "time": "22:04",
+      "action": "LOGIN",
+      "details": "Usuário zOtGOD efetuou login no painel.",
+      "username": "zOtGOD",
+      "timestamp": "2026-07-02T22:04:49.288Z"
+    },
+    {
+      "id": "hist-1783028388460-2lvi",
+      "date": "2026-07-02",
+      "time": "21:39",
+      "action": "LOGOUT",
+      "details": "Usuário admin deslogou do painel.",
+      "username": "admin",
+      "timestamp": "2026-07-02T21:39:48.460Z"
+    },
+    {
+      "id": "hist-1783028381866-3it2",
+      "date": "2026-07-02",
+      "time": "21:39",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T21:39:41.865Z"
+    },
+    {
+      "id": "hist-1783028381603-1qe8",
+      "date": "2026-07-02",
+      "time": "21:39",
+      "action": "SINCRONIZAÇÃO",
+      "details": "O banco de dados foi sincronizado/restaurado a partir do cache do cliente.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T21:39:41.603Z"
+    },
+    {
+      "id": "hist-1783026396571-8ywa",
+      "date": "2026-07-02",
+      "time": "21:06",
+      "action": "LOGOUT",
+      "details": "Usuário caio_patrocinio deslogou do painel.",
+      "username": "caio_patrocinio",
+      "timestamp": "2026-07-02T21:06:36.571Z"
+    },
+    {
+      "id": "hist-init",
+      "date": "2026-07-02",
+      "time": "20:28",
+      "action": "INICIALIZAÇÃO",
+      "details": "Banco de dados inicializado com sucesso.",
+      "username": "Sistema",
+      "timestamp": "2026-07-02T20:28:33.738Z"
+    }
+  ],
+  "members": [
+    {
+      "id": "member-1",
+      "main": "Kharsek",
+      "notes": "Membro lendário, focado em bosses e hunts de alto nível.",
+      "access": {
+        "crypt": true,
+        "dragon": true,
+        "sanguine": true
+      },
+      "makers": [
+        {
+          "id": "maker-1-1",
+          "name": "Kharsek Maker",
+          "createdAt": "2025-02-10T14:30:00.000Z",
+          "levelGoals": [
+            {
+              "id": "g1",
+              "date": "2025-02-10",
+              "goal": "450+",
+              "time": "14:30",
+              "byUser": "admin"
+            },
+            {
+              "id": "g2",
+              "date": "2025-04-12",
+              "goal": "500+",
+              "time": "18:15",
+              "byUser": "lider"
+            }
+          ]
+        }
+      ],
+      "status": "Active",
+      "tsNick": "Kharsek [TS]",
+      "joinDate": "2025-01-15",
+      "warnings": [
+        {
+          "id": "warn-1-1",
+          "date": "2025-03-01",
+          "time": "21:00",
+          "reason": "Atraso sem justificativa na war de sábado.",
+          "removed": true,
+          "byLeader": "lider",
+          "removedBy": "admin",
+          "removedDate": "2025-03-15",
+          "removedTime": "15:20"
+        }
+      ],
+      "createdAt": "2025-01-15T12:00:00.000Z",
+      "updatedAt": "2025-04-12T18:15:00.000Z",
+      "responsibleLeader": "admin"
+    },
+    {
+      "id": "member-2",
+      "main": "Eternal Oblivion",
+      "notes": "Excelente blocker, participa ativamente de todos os serviços.",
+      "access": {
+        "crypt": false,
+        "dragon": true,
+        "sanguine": true
+      },
+      "makers": [],
+      "status": "Active",
+      "tsNick": "EO [Team]",
+      "joinDate": "2025-03-10",
+      "warnings": [
+        {
+          "id": "warn-2-1",
+          "date": "2025-06-20",
+          "time": "20:10",
+          "reason": "Ausência em reunião de estratégia.",
+          "removed": false,
+          "byLeader": "lider"
+        }
+      ],
+      "createdAt": "2025-03-10T15:00:00.000Z",
+      "updatedAt": "2025-06-20T20:10:00.000Z",
+      "responsibleLeader": "lider"
+    }
+  ],
+  "accessTypes": [
+    {
+      "id": "sanguine",
+      "label": "Sanguine"
+    },
+    {
+      "id": "crypt",
+      "label": "Crypt"
+    },
+    {
+      "id": "dragon",
+      "label": "Dragãozinho"
+    }
+  ],
+  "globalGoals": {
+    "crypt": false,
+    "dragon": false,
+    "sanguine": false,
+    "makerLevel": "450+"
+  }
+}
