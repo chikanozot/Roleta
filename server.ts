@@ -1,6 +1,8 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import { createServer as createViteServer } from 'vite';
 import { DatabaseState, User, Member, HistoryLog, Maker, Warning, GoalHistoryItem } from './src/types';
 
@@ -185,6 +187,143 @@ function initializeDatabase(): DatabaseState {
   }
 }
 
+// Initialize Firebase Admin
+try {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    initializeApp({
+      projectId: firebaseConfig.projectId
+    });
+    console.log('Firebase initialized with Project ID:', firebaseConfig.projectId);
+  } else {
+    console.warn('Firebase config file not found, running with local storage fallback.');
+  }
+} catch (err) {
+  console.error('Failed to initialize Firebase Admin:', err);
+}
+
+async function syncToFirestore(state: DatabaseState) {
+  try {
+    if (getApps().length === 0) return;
+    const fDb = getFirestore();
+    const batch = fDb.batch();
+
+    // 1. Users
+    for (const user of state.users) {
+      const docRef = fDb.collection('users').doc(user.id);
+      batch.set(docRef, user);
+    }
+
+    // 2. Members
+    for (const member of state.members) {
+      const docRef = fDb.collection('members').doc(member.id);
+      batch.set(docRef, member);
+    }
+
+    // 3. History (Sync newest 100 logs to Firestore)
+    for (const log of state.history.slice(0, 100)) {
+      const docRef = fDb.collection('history').doc(log.id);
+      batch.set(docRef, log);
+    }
+
+    // 4. Config
+    const configRef = fDb.collection('config').doc('general');
+    batch.set(configRef, {
+      accessTypes: state.accessTypes,
+      roles: state.roles,
+      globalGoals: state.globalGoals
+    });
+
+    await batch.commit();
+
+    // 5. Cleanup deleted members/users in background
+    const dbUsersIds = new Set(state.users.map(u => u.id));
+    const dbMembersIds = new Set(state.members.map(m => m.id));
+
+    const usersSnap = await fDb.collection('users').get();
+    usersSnap.forEach(doc => {
+      if (!dbUsersIds.has(doc.id)) {
+        doc.ref.delete().catch(e => console.error('Error deleting user doc:', e));
+      }
+    });
+
+    const membersSnap = await fDb.collection('members').get();
+    membersSnap.forEach(doc => {
+      if (!dbMembersIds.has(doc.id)) {
+        doc.ref.delete().catch(e => console.error('Error deleting member doc:', e));
+      }
+    });
+  } catch (err) {
+    console.error('Error in syncToFirestore:', err);
+  }
+}
+
+async function loadFromFirestore(): Promise<DatabaseState | null> {
+  try {
+    if (getApps().length === 0) return null;
+    const fDb = getFirestore();
+
+    // Check if we have anything in users
+    const usersSnap = await fDb.collection('users').get();
+    if (usersSnap.empty) {
+      return null; // Empty database, need seeding
+    }
+
+    const users: User[] = [];
+    usersSnap.forEach(doc => {
+      users.push(doc.data() as User);
+    });
+
+    const membersSnap = await fDb.collection('members').get();
+    const members: Member[] = [];
+    membersSnap.forEach(doc => {
+      members.push(doc.data() as Member);
+    });
+
+    const historySnap = await fDb.collection('history').orderBy('timestamp', 'desc').limit(200).get();
+    const history: HistoryLog[] = [];
+    historySnap.forEach(doc => {
+      history.push(doc.data() as HistoryLog);
+    });
+
+    const configDoc = await fDb.collection('config').doc('general').get();
+    let accessTypes = [
+      { id: 'sanguine', label: 'Sanguine' },
+      { id: 'crypt', label: 'Crypt' },
+      { id: 'dragon', label: 'Dragãozinho' }
+    ];
+    let roles = ['Administrador', 'Líder'];
+    let globalGoals = {
+      sanguine: false,
+      crypt: false,
+      dragon: false,
+      makerLevel: '450+'
+    };
+
+    if (configDoc.exists) {
+      const configData = configDoc.data();
+      if (configData) {
+        if (configData.accessTypes) accessTypes = configData.accessTypes;
+        if (configData.roles) roles = configData.roles;
+        if (configData.globalGoals) globalGoals = configData.globalGoals;
+      }
+    }
+
+    return {
+      users,
+      members,
+      history,
+      accessTypes,
+      roles,
+      globalGoals
+    };
+  } catch (err) {
+    console.error('Error loading from Firestore:', err);
+    return null;
+  }
+}
+
 // Write helper
 function writeDatabase(state: DatabaseState) {
   try {
@@ -192,10 +331,38 @@ function writeDatabase(state: DatabaseState) {
   } catch (err) {
     console.error('Error writing database file:', err);
   }
+
+  // Asynchronously sync to Cloud Firestore
+  syncToFirestore(state).catch(err => {
+    console.error('Error syncing to Firestore:', err);
+  });
 }
 
 // Load database state
 let db = initializeDatabase();
+
+// Initialize Firestore sync
+async function initCloudDatabase() {
+  if (getApps().length === 0) return;
+  console.log('Fetching latest state from Cloud Firestore...');
+  const cloudState = await loadFromFirestore();
+  if (cloudState) {
+    db = cloudState;
+    console.log('Successfully synchronized database state with Cloud Firestore.');
+    // Keep local cache file updated
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
+    } catch (e) {}
+  } else {
+    console.log('Cloud Firestore is empty. Seeding local database state to Cloud Firestore...');
+    await syncToFirestore(db);
+    console.log('Seeding complete.');
+  }
+}
+
+initCloudDatabase().catch(err => {
+  console.error('Failed to initialize cloud database sync:', err);
+});
 
 // Add a history helper
 function logAction(username: string, action: string, details: string) {
